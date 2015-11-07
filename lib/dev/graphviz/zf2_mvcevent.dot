@@ -1,0 +1,167 @@
+digraph zf2 {
+    graph [ fontsize=11, fontname="MigMix 2M" ];
+    node [ fontsize=11, fontname="MigMix 2M"];
+    edge [ fontsize=11, fontname="MigMix 2M"];
+ 
+    subgraph cluster_mvc {
+        label = "Zend\\Mvc";
+ 
+        subgraph cluster_application { 
+            label = "Application"; 
+            node [ shape=ellipse ];
+            bootstrap;
+            run;
+        }
+ 
+        node [shape=box ];
+        RouteListener;
+        DispatchListener;
+        SendResponseListener;
+        node [ shape=diamond ];
+        EVENT_BOOTSTRAP [ label="bootstrap" ];
+        EVENT_ROUTE [ label="route" ];
+        EVENT_DISPATCH [ label="dispatch" ];
+        EVENT_DISPATCH_ERROR [ label="dispatch.error" ];
+        EVENT_RENDER [ label="render" ];
+        EVENT_RENDER_ERROR [ label="render.error" ];
+        EVENT_FINISH [ label="finish" ];
+ 
+        /* trigger */
+        edge [ arrowhead=normal ];
+        bootstrap -> EVENT_BOOTSTRAP;
+        run -> EVENT_ROUTE;
+        run -> EVENT_DISPATCH;
+        run -> EVENT_RENDER;
+        run -> EVENT_FINISH;
+        RouteListener -> EVENT_DISPATCH_ERROR;
+        DispatchListener -> EVENT_DISPATCH_ERROR;
+ 
+        subgraph cluster_mvc_view_http {
+            label="View\\Http";
+ 
+            subgraph cluster_route_not_found {
+                label = "RouteNotFoundStrategy";
+                node [ shape=ellipse ];
+                detectNotFoundError;
+                prepareNotFoundViewModel;
+            }
+ 
+            subgraph cluster_viewmanager {
+                label="ViewManager";
+ 
+                node [ shape=ellipse ];
+                ViewManagerOnBootstrap [ label="onBootstrap" ];
+            }
+ 
+ 
+            node [ shape=box ];
+            edge [ style="dotted"];
+ 
+            ViewManagerOnBootstrap -> DefaultRenderingStrategy;
+            ViewManagerOnBootstrap -> InjectViewModelListener;
+            ViewManagerOnBootstrap -> InjectTemplateListener;
+            ViewManagerOnBootstrap -> CreateViewModelListener;
+            ViewManagerOnBootstrap -> ExceptionStrategy;
+            edge [ style="filled", arrowhead="normal" ];
+            /* trigger */
+            DefaultRenderingStrategy -> EVENT_RENDER_ERROR;
+        }
+ 
+        subgraph cluster_abstract_controller {
+            label = "Controller\\AbstractController";
+            node [ shape=ellipse ];
+            ControllerDispatch [ label="dispatch" ];
+            ControllerOnDispatch [ label="onDispatch" ];
+ 
+            node [ shape=diamond];
+            CONTROLLER_DISPATCH_EVENT [ label ="dispatch"  ]
+ 
+            /* trigger */
+            edge [ arrowhead=normal ];
+            ControllerDispatch -> CONTROLLER_DISPATCH_EVENT;
+ 
+        }
+        /* attach */
+        edge [ arrowhead=normal ];
+        EVENT_BOOTSTRAP -> ViewManagerOnBootstrap [ label="10000" ];
+        EVENT_ROUTE -> RouteListener;
+        EVENT_DISPATCH -> DispatchListener;
+        EVENT_DISPATCH -> prepareNotFoundViewModel [ label="-90" ];
+        EVENT_DISPATCH_ERROR -> detectNotFoundError;
+        EVENT_DISPATCH_ERROR -> prepareNotFoundViewModel;
+        EVENT_DISPATCH_ERROR -> ExceptionStrategy;
+        EVENT_DISPATCH_ERROR -> InjectViewModelListener [ label="-100" ];
+        CONTROLLER_DISPATCH_EVENT -> ControllerOnDispatch;
+        CONTROLLER_DISPATCH_EVENT -> CreateViewModelListener [ label="-80" ];
+        CONTROLLER_DISPATCH_EVENT -> prepareNotFoundViewModel [ label="-90" ];
+        CONTROLLER_DISPATCH_EVENT -> InjectTemplateListener [ label="-90" ];
+        CONTROLLER_DISPATCH_EVENT -> InjectViewModelListener [ label="-100" ];
+        EVENT_RENDER -> DefaultRenderingStrategy [ label="-10000" ];
+        EVENT_RENDER_ERROR -> ExceptionStrategy;
+        EVENT_RENDER_ERROR -> InjectViewModelListener [ label="-100" ];
+        EVENT_RENDER_ERROR -> DefaultRenderingStrategy [ label="-10000" ];
+        EVENT_FINISH -> SendResponseListener [ label="-10000" ];
+ 
+        /* method call */
+        edge [ arrowhead=normal, style=dotted ];
+        DispatchListener -> ControllerDispatch; 
+ 
+        edge [ style=normal ];
+    }
+ 
+    subgraph cluster_module {
+        label="Modle Class";
+        node [ shape=ellipse];
+        onBootstrap;
+    }
+ 
+    subgraph cluster_view {
+        label="Zend\\View";
+ 
+        node [ shape=diamond ];
+        EVENT_RENDERER = "renderer";
+        EVENT_RENDERER_POST = "renderer.post";
+        EVENT_RESPONSE = "response";
+ 
+        subgraph cluster_view_view {
+            label = "View";
+            node [ shape=ellipse ];
+            render;
+ 
+            node [ shape=diamond ];
+            EVENT_RENDERER [ label=renderer ];
+            EVENT_RENDERER_POST [label="renderer.post"] ;
+            EVENT_RESPONSE [ label=response ]; 
+            /* trigger */
+            render -> EVENT_RENDERER;
+            render -> EVENT_RENDERER_POST;
+            render -> EVENT_RESPONSE;
+        }
+ 
+        subgraph cluster_view_php_renderer_strategy {
+            label = "PhpRendererStrategy";
+            node [ shape=ellipse ]
+            PhpRendererSelectRenderer [ label="selectRenderer" ];
+            PhpRendererInjectResponse [ label="injectResponse" ];
+        }
+ 
+        /* attach */
+        EVENT_RENDERER -> PhpRendererSelectRenderer;
+        EVENT_RESPONSE -> PhpRendererInjectResponse;
+    }
+ 
+ 
+    /* attach */
+    edge [ arrowhead=normal ];
+    EVENT_BOOTSTRAP -> onBootstrap;
+ 
+    /* method call */
+    edge [ arrowhead=normal, style=dotted ];
+    DefaultRenderingStrategy -> render;
+ 
+    /* dummy for layout */
+    edge [ style=invis ];
+    node [ style=invisible ];
+    ControllerOnDispatch -> prepareNotFoundViewModel -> ViewManagerOnBootstrap 
+    InjectTemplateListener -> EVENT_RENDER_ERROR;
+}

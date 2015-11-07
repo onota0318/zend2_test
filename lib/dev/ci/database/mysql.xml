@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="MySQL Task" default="">
+
+    <!-- 初期化 -->
+    <target name="mysql.init">
+        <property name="db.manager.type"     value="mysql" />
+        <property name="db.manager.host"     value="${db.manager.host}" />
+        <property name="db.manager.user"     value="${db.manager.user}" />
+        <property name="db.manager.password" value="${db.manager.password}" />
+        <property name="db.manager.encoding" value="${db.manager.encoding}" />
+
+        <property name="db.project.type"     value="${db.project.type}" />
+        <property name="db.project.name"     value="${db.project.name}" />
+        <property name="db.project.user"     value="${db.project.user}" />
+        <property name="db.project.host"     value="${db.project.host}" />
+        <property name="db.project.password" value="${db.project.password}" />
+        <property name="db.project.encoding" value="${db.project.encoding}" />
+    </target>
+
+    <!-- DB作成 -->
+    <target name="mysql.database.create" depends="mysql.init">
+        <pdosqlexec url="${db.manager.type}:host=${db.manager.host}"
+                    userid="${db.manager.user}"
+                    password="${db.manager.password}">
+
+            drop database if exists `${db.project.name}`;
+            create database `${db.project.name}` character set ${db.project.encoding};
+            grant all privileges on `${db.project.name}`.* to `${db.project.user}`@`${db.project.host}` identified by '${db.project.password}';
+            flush privileges;
+
+        </pdosqlexec>
+    </target>
+
+    <!-- テーブル作成 -->
+    <target name="mysql.table.create" depends="mysql.init">
+
+        <property name="ddl.files.dir" value="${ddl.files.dir}" />
+
+        <pdosqlexec onerror="contiue"
+                    autocommit="true"
+                    url="${db.project.type}:host=${db.project.host};dbname=${db.project.name}"
+                    userid="${db.project.user}"
+                    password="${db.project.password}">
+
+            <fileset dir="${ddl.files.dir}">
+                <include name="*_tbl.sql"/>
+                <include name="*_setup.sql"/>
+            </fileset>
+        </pdosqlexec>
+    </target>
+
+
+</project>

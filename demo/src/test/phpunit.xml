@@ -1,0 +1,35 @@
+<phpunit 
+    bootstrap="/var/www/cgi-bin/demo/src/test/bootstrap.php"
+    stopOnError="false"
+    stopOnFailure="false"
+    stopOnIncomplete="false"
+    stopOnSkipped="false"
+    strict="false"
+    verbose="false">
+
+    <testsuites>
+        <testsuite name="FW_DEMO">
+            <directory suffix="Test.php">.</directory>
+        </testsuite>
+    </testsuites>
+
+    <filter>
+<!--
+        <whitelist addUncoveredFilesFromWhitelist="true">
+            <directory suffix=".php">../application</directory>
+            <exclude>
+                <directory suffix=".config.php">../application</directory>
+            </exclude>
+        </whitelist>
+-->
+
+        <blacklist>
+            <directory suffix=".php">/var/www/cgi-bin/</directory>
+            <exclude>
+                <directory suffix=".php">/var/www/cgi-bin/demo/src/application/</directory>
+            </exclude>
+        </blacklist>
+    </filter>
+
+</phpunit>
+ 

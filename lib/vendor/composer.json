@@ -1,0 +1,38 @@
+{
+    "repositories": [
+        { "type": "pear", "url": "http://pear.pdepend.org"}
+       ,{ "type": "pear", "url": "http://pear.phpmd.org"  }
+       ,{ "type": "pear", "url": "http://pear.phing.info" }
+       ,{ "type": "pear", "url": "http://pear.survivethedeepend.com" }
+       ,{ "type": "pear", "url": "https://hamcrest.googlecode.com/svn/pear" }
+    ],
+    "require": {
+         "php" : "5.5.*"
+        ,"smarty/smarty": "3.*"
+        ,"zendframework/zendframework": "2.*"
+    },
+    "require-dev": {
+        "php" : "5.5.*"
+       ,"phing/phing" : "dev-master"
+       ,"phpmd/phpmd" : "2.*"
+       ,"pdepend/pdepend" : "2.*"
+       ,"phploc/phploc" : "2.*"
+       ,"phpunit/phpunit" : "4.*"
+       ,"mockery/mockery" : "*"
+       ,"sebastian/phpcpd" : "2.*"
+       ,"squizlabs/php_codesniffer": "2.*"
+    },
+    "config": {
+        "process-timeout" : 900
+       ,"vendor-dir" : "./"
+       ,"bin-dir" : "./bin/"
+    },
+    "archive": {
+        "exclude": ["test*"]
+    },
+    "autoload": {
+        "psr-0": {
+             "Onota0318\\": "../onota0318/"
+        }
+    }
+}

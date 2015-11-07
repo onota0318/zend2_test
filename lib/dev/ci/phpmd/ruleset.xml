@@ -1,0 +1,247 @@
+<ruleset name="InspectionRules"
+       xmlns="http://pmd.sf.net/ruleset/1.0.0"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://pmd.sf.net/ruleset/1.0.0 http://pmd.sf.net/ruleset_xml_schema.xsd"
+       xsi:noNamespaceSchemaLocation="http://pmd.sf.net/ruleset_xml_schema.xsd">
+
+<!--
+===================================================================
+*     【DNPカスタムルール】
+*     NGと思わしきルールを列挙
+*     一部既製から抜粋
+*     http://phpmd.org/rules/index.html#unused-code-rules
+*
+*     カスタマイズについては
+*     .jenkins_settings/config/phpmd/Rules/内にルールクラスを定義
+*     [参考]http://okayuclub.net/item/274
+*
+*     PDependsに激しく依存してます。
+*     [参考]http://pdepend.org/documentation/software-metrics.html
+*
+*     やむを得ない理由により警告解除をする場合、
+*     @SuprressWarnings(PHPMD.ルール名)
+*     をヘッダに付与してください。
+===================================================================
+-->
+
+<!--
+  *****************************************************************
+  *                         独自ルール                            *
+  *****************************************************************
+-->
+<!--
+  ===================================
+  ■同一行に複数条件記があるかチェック
+  ===================================
+-->
+
+    <rule name="同一行複数条件"
+          class="Dev\Ci\Phpmd\Rules\UseStatementAtTheSameLine"
+          message="line {0}.：同一行に複数条件を記述しなでください。">
+         <description>同一行に複数条件を記述しなでください。</description>
+       <priority>1</priority>
+    </rule>
+
+<!--
+  ===================================
+  ■ライブラリ 使用禁止メソッドチェック
+  ===================================
+-->
+
+    <rule name="使用禁止ライブラリ"
+          class="Dev\Ci\Phpmd\Rules\UseUnavailableLibraries"
+          message="line {1}.：{2} はプロダクトコードで使用しないでください。">
+         <description>プロダクトコードで使用しないでください。</description>
+       <priority>1</priority>
+    </rule>
+
+<!--
+  ===================================
+  ■日付系の関数を直接使っている
+  ===================================
+-->
+    <rule name="日付関数の直接利用"
+          class="Dev\Ci\Phpmd\Rules\CalledPHPDateFunctions"
+          message="line {1}.：{0}()は使用しないでください。代わりに\Onota0318\Library\DateTimerを使用してください。 ">
+         <priority>1</priority>
+         <description></description>
+    </rule>
+
+
+<!--
+  ===================================
+  ■弱いHASH関数を使っている
+  ===================================
+-->
+    <rule name="安全性の低いHash関数の利用"
+          class="Dev\Ci\Phpmd\Rules\CalledWeakHashFunctions"
+          message="line {1}.：安全性の高いhashアルゴリズムを使用してください">
+         <priority>1</priority>
+         <description>安全性の高いhashアルゴリズムを使用してください</description>
+    </rule>
+
+<!--
+  *****************************************************************
+  *                    既製ルール（翻訳？済）                     *
+  *****************************************************************
+-->
+
+<!--
+  ===================================
+  ■循環複雑度（条件数）の超過
+  ===================================
+-->
+    <rule name="条件数の超過"
+          since="0.1"
+          message = "{0}::{1}() 条件数が {3}を超えています。 条件数：{2}"
+          class="PHPMD\Rule\CyclomaticComplexity"
+          externalInfoUrl="http://phpmd.org/rules/codesize.html#cyclomaticcomplexity">
+        <properties>
+            <property name="reportLevel" value="15"/>
+            <property name="showClassesComplexity"
+                      description="Indicate if class average violation should be added to the report"
+                      value="true"/>
+            <property name="showMethodsComplexity"
+                      description="Indicate if class average violation should be added to the report"
+                      value="true"/>
+        </properties>
+        <priority>1</priority>
+    </rule>
+
+<!--
+  ===================================
+  ■メソッド内行数超過
+  ===================================
+-->
+    <rule name="メソッド内行数超過"
+          since="0.1"
+          message="{0}::{1}() 内行数が {3}を超えています。行数： {2}"
+          class="PHPMD\Rule\Design\LongMethod"
+          externalInfoUrl="http://phpmd.org/rules/codesize.html#excessivemethodlength">
+        <properties>
+            <property name="minimum" description="The method size reporting threshold" value="100" />
+            <property name="ignore-whitespace" value="true" />
+        </properties>
+        <priority>1</priority>
+    </rule>
+
+
+<!--
+  ===================================
+  ■スーパーグローバルの参照
+  ===================================
+-->
+    <rule name="スーパーグローバルの参照"
+          since="0.2"
+          message = "スーパーグローバルに直接アクセスしないでください。{1}."
+          class="PHPMD\Rule\Controversial\Superglobals"
+          externalInfoUrl="#">
+        <priority>1</priority>
+    </rule>
+
+<!--
+  ===================================
+  ■exitを使用
+  ===================================
+-->
+    <rule name="exitを使用"
+          since="0.2"
+          message = "{1}()内でexitが使用されています。"
+          class="PHPMD\Rule\Design\ExitExpression"
+          externalInfoUrl="http://phpmd.org/rules/design.html#exitexpression">
+        <description></description>
+        <priority>1</priority>
+    </rule>
+
+<!--
+  ===================================
+  ■evalを使用
+  ===================================
+-->
+    <rule name="evalを使用"
+          since="0.2"
+          message = "{1}()内でevalが使用されています。"
+          class="PHPMD\Rule\Design\EvalExpression"
+          externalInfoUrl="http://phpmd.org/rules/design.html#evalexpression">
+        <priority>1</priority>
+    </rule>
+
+<!--
+  ===================================
+  ■gotoを使用
+  ===================================
+-->
+    <rule name="gotoを使用"
+          since="0.2"
+          message = "{1}()内でgotoが使用されています。"
+          class="PHPMD\Rule\Design\GotoStatement"
+          externalInfoUrl="http://phpmd.org/rules/design.html#gotostatement">
+        <priority>1</priority>
+    </rule>
+
+<!--
+  ===================================
+  ■クラス内定数名の命名違反
+  ===================================
+-->
+    <rule name="クラス内定数名の命名違反"
+          since="0.2"
+          message="定数 {0} は大文字で定義してください。"
+          class="PHPMD\Rule\Naming\ConstantNamingConventions"
+          externalInfoUrl="http://phpmd.org/rules/naming.html#constantnamingconventions">
+        <priority>1</priority>
+    </rule>
+
+<!--
+  ===================================
+  ■未使用のprivateフィールド
+  ===================================
+-->
+    <rule name="未使用のprivateフィールド"
+          since="0.2"
+          message="{0} が使用されていません。"
+          class="PHPMD\Rule\UnusedPrivateField"
+          externalInfoUrl="http://phpmd.org/rules/unusedcode.html#unusedprivatefield">
+        <priority>1</priority>
+    </rule>
+
+<!--
+  ===================================
+  ■未使用のlocal変数
+  ===================================
+-->
+    <rule name="未使用のlocal変数"
+          since="0.2"
+          message="{0} が使用されていません。"
+          class="PHPMD\Rule\UnusedLocalVariable"
+          externalInfoUrl="http://phpmd.org/rules/unusedcode.html#unusedlocalvariable">
+        <priority>1</priority>
+    </rule>
+
+<!--
+  ===================================
+  ■未使用のprivateメソッド
+  ===================================
+-->
+    <rule name="未使用のprivateメソッド"
+          since="0.2"
+          message="{0} が使用されていません。"
+          class="PHPMD\Rule\UnusedPrivateMethod"
+          externalInfoUrl="http://phpmd.org/rules/unusedcode.html#unusedprivatemethod">
+        <priority>1</priority>
+    </rule>
+
+<!--
+  ===================================
+  ■未使用のパラメータ
+  ===================================
+-->
+    <rule name="未使用のパラメータ"
+          since="0.2"
+          message="{0} が使用されていません。"
+          class="PHPMD\Rule\UnusedFormalParameter"
+          externalInfoUrl="http://phpmd.org/rules/unusedcode.html#unusedformalparameter">
+        <priority>1</priority>
+    </rule>
+
+</ruleset>

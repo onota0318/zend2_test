@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="CI Task" default="">
+    <property environment="env"/>
+    <property name="application.env" value="development" />
+    <property name="workspace"       value="${env.WORKSPACE}" />
+    <property name="project.root"    value="${env.PROJECT_ROOT}" />
+
+    <property name="dev.tools.dir"    value="/var/www/cgi-bin/dev/" />
+    <property name="dev.tools.ci.dir" value="${dev.tools.dir}ci/" />
+    <property name="lib.tools.dir"    value="/var/www/cgi-bin/lib/" />
+
+    <!-- 日付 -->
+    <tstamp>
+        <format property="Ymd" pattern="%Y%m%d"/>
+        <format property="YmdHis" pattern="%Y%m%d%H%M%S"/>
+    </tstamp>
+
+    <!--############################################-->
+    <!--##               PROPERTIES               ##-->
+    <!--############################################-->
+    <!-- ********************************* --> 
+    <!--             基底設定              -->
+    <!-- ********************************* --> 
+    <!-- build設定（composerのパス、DBマネージャアカウント等） -->
+    <property name="build.properties" value="${dev.tools.ci.dir}/build.properties" />
+    <property file="${build.properties}" />
+
+    <!-- buildファイル再定義（必須情報のみ／phing実行時に外から注入できるように） -->
+    <!-- composer -->
+    <property name="composer.path"            value="${build.composer.path}" />
+    <property name="composer.vendor.path"     value="${build.composer.vendor.path}" />
+    <property name="composer.vendor.bin.path" value="${build.composer.vendor.bin.path}" />
+
+    <!-- command -->
+    <property name="command.phpunit" value="${build.command.phpunit}" />
+    <property name="command.phpmd"   value="${build.command.phpmd}" />
+    <property name="command.phpcs"   value="${build.command.phpcs}" />
+    <property name="command.pdepend" value="${build.command.pdepend}" />
+    <property name="command.phpcbf"  value="${build.command.phpcbf}" />
+    <property name="command.phploc"  value="${build.command.phploc}" />
+    <property name="command.doxygen" value="${build.command.doxygen}" />
+
+    <!-- database -->
+    <property name="db.manager.type"     value="${build.db.manager.type}" />
+    <property name="db.manager.host"     value="${build.db.manager.host}" />
+    <property name="db.manager.user"     value="${build.db.manager.user}" />
+    <property name="db.manager.password" value="${build.db.manager.password}" />
+    <property name="db.manager.name"     value="${build.db.manager.name}" />
+    <property name="db.manager.encoding" value="${build.db.manager.encoding}" />
+
+    <import file="${dev.tools.ci.dir}database/${db.manager.type}.xml" />
+
+    <!-- composerのautoload -->
+    <includepath classpath="${composer.vendor.path}" />
+
+    <!-- ********************************* --> 
+    <!--            PROJECT設定            -->
+    <!-- ********************************* --> 
+    <property name="project.src"             value="${project.root}/src/" />
+    <property name="project.src.application" value="${project.src}application/" />
+    <property name="project.src.test"        value="${project.src}test/" />
+    <property name="project.resource"        value="${project.root}/resource/" />
+    <property name="project.resource.sql"    value="${project.resource}sql/" />
+    <property name="project.config"          value="${project.root}/config/" />
+    <property name="project.config.application.env.file" 
+              value="${project.config}/env/${application.env}.properties.ini" />
+
+    <property file="${project.config.application.env.file}" />
+
+    <property name="db.project.type"     value="${db_type}" />
+    <property name="db.project.host"     value="${db_host}" />
+    <property name="db.project.name"     value="${db_name}" />
+    <property name="db.project.user"     value="${db_user}" />
+    <property name="db.project.password" value="${db_password}" />
+    <property name="db.project.encoding" value="${db.manager.encoding}" />
+
+    <!-- ********************************* --> 
+    <!--             成果物設定            -->
+    <!-- ********************************* --> 
+    <property name="result.basedir" value="${workspace}/res" />
+    <property name="work.basedir"   value="${workspace}/work" />
+    <property name="log.basedir"    value="${result.basedir}/log" />
+    <property name="report.basedir" value="${result.basedir}/report" />
+
+    <!-- レポート系ディレクトリ -->
+    <property name="phpunit.reportdir"  value="${report.basedir}/phpunit" />
+    <property name="coverage.reportdir" value="${phpunit.reportdir}/coverage" />
+    <property name="doxygen.reportdir"  value="${report.basedir}/doxygen" />
+    <property name="phpcs.reportdir"    value="${report.basedir}/phpcs" />
+    <property name="phpmd.reportdir"    value="${report.basedir}/phpmd" />
+    <property name="phploc.reportdir"   value="${report.basedir}/phploc" />
+
+    <!-- ログ系ディレクトリ -->
+    <property name="phpunit.logdir"     value="${log.basedir}/phpunit" />
+    <property name="coverage.logdir"    value="${phpunit.logdir}/coverage" />
+    <property name="doxygen.logdir"     value="${log.basedir}/doxygen" />
+    <property name="phpcs.logdir"       value="${log.basedir}/phpcs" />
+    <property name="phpmd.logdir"       value="${log.basedir}/phpmd" />
+    <property name="phploc.logdir"      value="${log.basedir}/phploc" />
+
+
+
+    <!--############################################-->
+    <!--##                TARGET                  ##-->
+    <!--############################################-->
+    <!-- ********************************* --> 
+    <!--               初期化              -->
+    <!-- ********************************* --> 
+    <target name="initialize">
+        <mkdir dir="${result.basedir}" />
+        <mkdir dir="${work.basedir}" />
+        <mkdir dir="${log.basedir}" />
+        <mkdir dir="${report.basedir}" />
+
+        <phingcall target="require.code">
+            <property name="require.file.path" value="${dev.tools.dir}autoload_dev.php" />
+        </phingcall>
+    </target>
+
+    <!-- プログラムのrequire処理（ありそうでない・・・） -->
+    <target name="require.code" description="プログラムのrequire処理">
+        <php expression="require_once '${require.file.path}';" />
+    </target>
+
+    <!-- ********************************* --> 
+    <!--               テスト              -->
+    <!-- ********************************* --> 
+    <target name="test.init" description="phpunit 初期化処理">
+        <delete dir="${phpunit.reportdir}"  verbose="true" />
+        <delete dir="${coverage.reportdir}" verbose="true" />
+        <delete dir="${phpunit.logdir}"     verbose="true" />
+
+        <mkdir dir="${phpunit.reportdir}" />
+        <mkdir dir="${coverage.reportdir}" />
+        <mkdir dir="${phpunit.logdir}" />
+
+        <chmod file="${phpunit.reportdir}"  mode="0777" />
+        <chmod file="${coverage.reportdir}" mode="0777" />
+        <chmod file="${phpunit.logdir}"     mode="0777" />
+    </target>
+
+
+    <target name="test.all" depends="test.init">
+
+        <property name="test.target.dir" value="${project.src.test}" />
+
+        <exec executable="${command.phpunit}">
+            <arg line="--configuration   ${test.target.dir}phpunit.xml"/>
+            <arg line="--log-junit       ${phpunit.reportdir}/phpunit.xml" />
+            <arg line="--testdox-html    ${phpunit.reportdir}/testdox.html" />
+            <arg line="--coverage-clover ${coverage.reportdir}/coverage.xml" />
+            <arg line="--coverage-html   ${coverage.reportdir}" />
+            <arg line="${project.src.test}"/>
+        </exec>
+    </target>
+
+    <target name="test.controller" depends="test.init">
+    </target>
+
+    <target name="test.logic" depends="test.init">
+    </target>
+
+    <target name="test.model" depends="test.init">
+    </target>
+
+    <!-- ********************************* --> 
+    <!--         インスペクション          -->
+    <!-- ********************************* --> 
+    <!-- ≪PMD≫ -->
+    <!--
+    潜在的ロジックバグ検知
+    以下デフォルトルール。phpmdタグの属性 rulesetsにカンマ区切りで指定。
+        =============
+        ・codesize：循環的複雑度などコードサイズ関連部分を検出するルール
+        ・controversial：キャメルケースなど議論の余地のある部分を検出するルール
+        ・design：ソフトの設計関連の問題を検出するルール
+        ・naming：長すぎたり、短すぎたりする名前を検出するルール
+        ・unusedcode：使われていないコードを検出するルール
+        =============
+    カスタマイズ方法は
+     http://phpmd.org/documentation/creating-a-ruleset.html
+    参照
+    -->
+    <target name="phpmd.init" description="mess detector">
+        <delete dir="${phpmd.reportdir}" verbose="true"/>
+        <delete dir="${phpmd.logdir}"    verbose="true"/>
+
+        <mkdir dir="${phpmd.reportdir}"/>
+        <mkdir dir="${phpmd.logdir}"/>
+    </target>
+
+
+    <target name="phpmd" description="mess detector" depends="phpmd.init">
+
+        <property name="phpmd.target.dir"   value="${project.src.application}" />
+        <property name="phpmd.resolve.dir"  value="${command.phpmd}/../../phpmd/phpmd/src/main/php/" />
+
+        <property name="phpmd.root.dir"  value="${dev.tools.ci.dir}phpmd/" />
+        <property name="phpmd.rules.dir" value="${phpmd.root.dir}Rules/" />
+        <property name="phpmd.ruleset"   value="${phpmd.root.dir}ruleset.xml" />
+
+        <includepath classpath="${phpmd.rules.dir}:${phpmd.resolve.dir}" />
+
+        <phpmd rulesets="${phpmd.ruleset}">
+            <fileset dir="${phpmd.target.dir}">
+                <include name="**/*.php" />
+                <exclude name="**/*Test.php" />
+                <exclude name="**/*config.php" />
+            </fileset>
+            <formatter type="xml" outfile="${phpmd.reportdir}/pmd.xml"/>
+        </phpmd>
+
+    </target>
+
+    <!-- **************************************************************
+                         ド キ ュ メ ン ト 生 成
+         ************************************************************** -->
+    <!-- 【Document生成系】 -->
+    <target name="doxygen.create" description="Doxygenを使ってます">
+
+        <delete dir="${doxygen.reportdir}"/>
+        <mkdir dir="${doxygen.reportdir}"/>
+
+        <property name="doxygen.target.dir"   value="${project.src} ${lib.tools.dir}/Onota0318/" />
+        <property name="doxygen.project.name" value="${env.JOB_NAME}" />
+        <property name="doxygen.config"       value="${dev.tools.ci.dir}doxygen/doxygen.conf" />
+
+        <exec dir="${project.src}" executable="/bin/false" escape="false">
+            <arg line="; " />
+            <arg line="( " />
+            <arg line="/bin/more" />
+            <arg line="${doxygen.config} ; "/>
+            <arg line="echo OUTPUT_DIRECTORY=${doxygen.reportdir} ; "/>
+            <arg line="echo PROJECT_NAME=${doxygen.project.name}  ; "/>
+            <arg line="echo INPUT=${doxygen.target.dir} ;"/>
+            <arg line=") " />
+            <arg line="| " />
+            <arg line="${command.doxygen} -" />
+        </exec>
+    </target>
+
+
+    <!-- ********************************* --> 
+    <!--         D A T A B A S E           -->
+    <!-- ********************************* --> 
+    <!-- DB作成 -->
+    <target name="db.database.create">
+        <!-- property名をここでも焼き直す -->
+        <phingcall target="${db.manager.type}.database.create">
+            <property name="db.manager.type"     value="${db.manager.type}" />
+            <property name="db.manager.host"     value="${db.manager.host}" />
+            <property name="db.manager.user"     value="${db.manager.user}" />
+            <property name="db.manager.password" value="${db.manager.password}" />
+
+            <property name="db.project.type"     value="${db.manager.type}" />
+            <property name="db.project.name"     value="${db.project.name}" />
+            <property name="db.project.user"     value="${db.project.user}" />
+            <property name="db.project.host"     value="${db.project.host}" />
+            <property name="db.project.password" value="${db.project.password}" />
+            <property name="db.project.encoding" value="${db.project.encoding}" />
+        </phingcall>
+    </target>
+
+    <!-- DDL発行 -->
+    <target name="db.table.create">
+        <!-- property名をここでも焼き直す -->
+        <phingcall target="${db.manager.type}.table.create">
+
+            <property name="db.project.type"     value="${db.manager.type}" />
+            <property name="db.project.name"     value="${db.project.name}" />
+            <property name="db.project.user"     value="${db.project.user}" />
+            <property name="db.project.host"     value="${db.project.host}" />
+            <property name="db.project.password" value="${db.project.password}" />
+            <property name="db.project.encoding" value="${db.project.encoding}" />
+
+            <property name="ddl.files.dir" value="${project.resource.sql}" />
+        </phingcall>
+    </target>
+</project>

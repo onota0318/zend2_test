@@ -1,0 +1,53 @@
+    /**
+     * インターセプタを実行する
+     * 
+     * @param AbstractController $instance Controller
+     * @param ServiceLocatorInterface $sm サービスロケーター
+     * @param array $conf Config
+     * @return void
+     * 
+     * @throws \BadMethodCallException
+     */
+    protected function invoke(AbstractController $instance, ServiceLocatorInterface $locator, array $conf)
+    {
+        foreach ($conf as $marker => $intercept) {
+
+            //マーカーInterface未実装→終了
+            if (!($instance instanceof $marker)) {
+                continue;
+            }
+            
+            //Closureでの定義→実行
+            if ($intercept instanceof \Closure) {
+
+                if (false === $intercept($instance, $locator)) {
+                    return;
+                }
+                
+                continue;
+            }
+            
+            //クラス定義→実行
+            if (class_exists($intercept)) {
+                
+                $ic = new $intercept();
+                if (!($ic instanceof InterceptorInterface)) {
+                    break;
+                }
+
+                $ic->intercept($instance, $locator);
+                if ($ic->isStopped()) {
+                    return;
+                }
+
+                continue;
+            }
+            
+            throw new \BadMethodCallException(
+                  "intercept定義が正しくありません。"
+                . "コントローラー：[" . get_class($instance) . "]"
+                . "マーカ：[" . $marker . "]"
+                . "インターセプタ[" . var_export($intercept, true) . "]"
+            );
+        }
+    }
